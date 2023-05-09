@@ -1,0 +1,64 @@
+library(tidyverse)
+Dataset <- filter(Dataset, N==3)
+write.table(correctrs11085725plink, file = "correctrs11085725plink.txt", sep = "\t", row.names = FALSE)
+#######################################################################################################
+##This script will open association results from PLINK then calculate bayes factors,#####
+##posterior probability of association and posterior credibility sets of SNPs##########################
+#######################################################################################################
+rm(list=ls())
+###set working director
+setwd
+###read in all the names of files containing the meta results
+infile<-"Dataset"							#get file list of relevent data
+n_skip <- 0   #note here the number of lines in the infile above the data
+outfile <- "output_Dataset"
+###set Credibility Interval level
+CI_level <- 0.9
+impute_info_threshold <- 0.7
+maf_threshold <- 0.002
+##work through all files
+###set up the results file (to be used in the manhattan plot###
+write.table(t(c("SNP","BP","P","BF","postP","postPcum","postP_CI")),file=paste(outfile),sep="\t",col.names=F,row.names=F,quote=FALSE) 
+D<-read.delim(paste(infile), skip = n_skip, sep = "", stringsAsFactors = FALSE)						#remember to change directory
+##use the following line to remove SNPs with missing data
+D<-D[is.na(D$OR)!=T,]
+D<-D[is.na(D$P)!=T,]
+###add in s.e.
+D$BETA <- log(D$OR)
+D$STAT <- qnorm( D$P/2 , lower.tail = FALSE) * sign(D$BETA)
+D$SE <- D$BETA / D$STAT
+D2<-D
+D2<-D2[is.na(D2$bC)!=T,] #To remove the NaN from the SE column
+###Calculate Bayes Factors
+#Effect-MAF independence. We assume that there is a use_tail% chance of a relative risk above U_RR
+use_tail<-0.05
+U_RR<-2
+W<- ( log(U_RR) / qnorm(1-use_tail) )^2
+V<-D2$bC_se^2
+z=D2$bC/D2$bC_se
+BF<-sqrt( (V+W)/V ) * exp( -((z^2)/2) * (W/(V+W)) )
+
+###set the BF to be associated/null
+BF <- 1/BF
+#BF_MAF <- 1/BF_MAF
+
+#get the posterior probability for each population and meta, order the posterior probabilities (from max to min) and get the cumulative total
+postP <- BF/sum(BF)
+orderpost <- order(postP,decreasing = TRUE)
+postPcum <- postP
+postPcum[orderpost] <- cumsum(postP[orderpost])
+postP_CI <- postPcum 
+postP_CI[orderpost] <-  cumsum(postP[orderpost]) < CI_level
+postP_CI[orderpost][sum(postP_CI)+1]<-1
+
+###collect together all the results and sort form higest post P to lowest
+D2<-data.frame(rsid = as.character(D2$SNP), BP = D2$bp, P = D2$pC,
+               BF = BF,
+               postP = postP,
+               postPcum = postPcum,
+               postP_CI = postP_CI)
+use_order <- order(D2$postP, decreasing = TRUE, na.last = NA)
+D2 <- D2[use_order,]
+
+###write results to file
+write.table(D2,file = paste(outfile),sep="\t",col.names=F,row.names=F,quote=FALSE,append=TRUE) #remember to change directory
