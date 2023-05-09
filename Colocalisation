@@ -1,0 +1,58 @@
+if(!require("remotes"))
+  install.packages("remotes") # if necessary
+library(remotes)
+install_github("chr1swallace/coloc",build_vignettes=TRUE)
+library(coloc)
+
+##########################################################################
+##########################################################################
+##########################################################################
+Colocalisation
+
+dataset1.csv
+D1 <- dataset
+library(dplyr)
+D1 <-  %>% distinct(SNP, .keep_all = TRUE)
+write.table(D1, file = "dataset1.txt", row.names = FALSE)
+D1 <- dataset1
+##use the following line to remove SNPs with missing data
+D1 <- D1[is.na(D1$OR)!=T,]
+D1 <- D![is.na(D1$P)!=T,]
+###add in s.e.
+D1$beta <- log(D1$OR)
+D1$STAT <- qnorm( D1$P/2 , lower.tail = FALSE) * sign(D1$beta)
+D1$SE <- D1$beta / D1$STAT
+D1 <- D1[is.nan(D1$SE)!=T,] 
+D1$varbeta <- D1$SE^2
+
+
+data(D1)
+D1$snp <- D1$SNP                  
+D1$position <- D1$BP
+attach(D1)
+D1_data=as.list(D1[c("beta","varbeta","snp","position")])
+D1_data$type="cc"
+str(D1_data)
+check_dataset(D1_data)
+
+D2 <- dataset2
+D2$varbeta <- D2$bC_se^2
+D2$beta <- D2$bC
+D2$snp <- D2$SNP
+D2$position <- D2$bp
+attach(D2)
+D2_data=as.list(D2[c("beta","varbeta","snp","position")])
+D2_data$type="cc"
+str(D2_data)
+check_dataset(D2_data)
+
+signal_coloc_results <- coloc.abf(dataset1 = D1_data, dataset2 = D2_data)
+print(signal_coloc_results)
+subset(signal_coloc_results$results,SNP.PP.H4>0.01)
+signal_coloc <- coloc_results
+
+o <- order(my.res$results$SNP.PP.H4,decreasing=TRUE)
+cs <- cumsum(my.res$results$SNP.PP.H4[o])
+w <- which(cs > 0.95)[1]
+my.res$results[o,][1:w,]$snp
+write.table(coloc_results[["results"]], file = "1st_suganl_coloc_results.txt",sep = "\t", row.names = FALSE)
