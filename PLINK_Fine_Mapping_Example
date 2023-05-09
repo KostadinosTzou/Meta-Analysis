@@ -1,5 +1,5 @@
 ####pipeline for runing a GWAS
-# note that the MHC is on chr 6 and from 26000000-34000000 bp. There is a file called 'exclude_mhc_range.txt' that can be used with the -exclude command to exclude this region if required.
+# note that the MHC is on chr 6 and from 26000000-34000000 bp. 
 
 ####steps 1-2 use PLINK  (NOTE: see here for filtering SNPs and or samples 'https://www.cog-genomics.org/plink/1.9/filter'
 ####Step 3-4 use R
@@ -20,7 +20,6 @@ plink --bfile EUR_GWAS --logistic beta hide-covar --covar EUR_GWAS_cov_PCA_sex.t
 
 #Continue adding SNPs as covariates untill there are no significant SNPs left
 plink --bfile EUR_GWAS --logistic beta hide-covar --covar EUR_GWAS_cov_PCA_sex.txt  --covar-number 1-4 --maf 0.025 --chr 1 --from-kb 173183 --to-kb 173463 --condition RS704840 --out EUR_GWAS_assoc_TNFSF4_condRS704840
-
 
 
 #### STEP 3) Run R code 'Plot_assoc_data.R' to generate a manhattan plot for the results from (1). Note this calls the R function 'manhattan2.R'
