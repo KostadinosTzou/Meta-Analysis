@@ -1,0 +1,34 @@
+####pipeline for runing a GWAS
+# note that the MHC is on chr 6 and from 26000000-34000000 bp. There is a file called 'exclude_mhc_range.txt' that can be used with the -exclude command to exclude this region if required.
+
+####steps 1-2 use PLINK  (NOTE: see here for filtering SNPs and or samples 'https://www.cog-genomics.org/plink/1.9/filter'
+####Step 3-4 use R
+
+#### STEP 1)genome-wide association testing
+#without sex as covariate
+#generate genome-wide association data in file called 'EUR_GWAS_assoc.assoc.logistic. 
+plink --bfile EUR_GWAS --logistic beta hide-covar --covar EUR_GWAS_cov_PCA_sex.txt  --covar-number 1-4 --maf 0.025 --out EUR_GWAS_assoc
+
+#### STEP 2) Locus specific association testing
+#without sex as covariate
+#generate Locus-wide association data in file called 'EUR_GWAS_assoc_LOCUSNAME_condRSNUMBER.assoc.logistic. 
+plink --bfile EUR_GWAS --logistic beta hide-covar --covar EUR_GWAS_cov_PCA_sex.txt  --covar-number 1-4 --maf 0.025 --chr 1 --from-kb 173183 --to-kb 173463 --out EUR_GWAS_assoc_TNFSF4
+
+#To test for multiple independant signals, generate conditional Locus-wide association data in file called 'EUR_GWAS_assoc_LOCUSNAME.assoc.logistic. 
+
+#NOTE: start by conditioning on the top SNP in the Locus-wide analysis first step
+
+#Continue adding SNPs as covariates untill there are no significant SNPs left
+plink --bfile EUR_GWAS --logistic beta hide-covar --covar EUR_GWAS_cov_PCA_sex.txt  --covar-number 1-4 --maf 0.025 --chr 1 --from-kb 173183 --to-kb 173463 --condition RS704840 --out EUR_GWAS_assoc_TNFSF4_condRS704840
+
+
+
+#### STEP 3) Run R code 'Plot_assoc_data.R' to generate a manhattan plot for the results from (1). Note this calls the R function 'manhattan2.R'
+
+#### STEP 4) Run LocusZoom on the result(s) from (2) 
+		Go to http://locuszoom.org/genform.php?type=yourdata
+		P-value column name  = "P"
+		Marker Column Name  = "SNP"
+		Select Chr number in "Specific Region to Display", and fill in locus start and end 
+position in "From" and "To"
+		Column Delimiter  = "WhiteSpace"
