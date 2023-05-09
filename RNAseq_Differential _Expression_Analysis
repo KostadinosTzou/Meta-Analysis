@@ -1,0 +1,57 @@
+library(readr)
+counts_file<- read_csv("raw_counts.csv")
+coldata_file <- read_delim("colData.tsv",
+                           "\t", escape_double = FALSE, trim_ws = TRUE)
+counts_file=counts_file[counts_file$width>0,]
+counts <- as.matrix(counts_file[-1], header = T)
+rownames(counts) <- counts_file$X1
+coldata <- as.data.frame(coldata_file$group)
+rownames(coldata)<-coldata_file$source_name
+colnames(coldata)<-"group"
+
+countData <- as.matrix(subset(counts, select = c(-width)))
+designFormula <- "~ group"
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("DESeq2")
+library(DESeq2)
+library(stats)
+
+dds <- DESeqDataSetFromMatrix(countData = CountData,
+                              colData = colData,
+                              design = as.formula(designFormula))
+counts(dds)
+
+dds <- dds[ rowSums(DESeq2::counts(dds)) > 1, ]
+dds <- DESeq(dds)
+DEresults1 = results(dds, contrast = c("group", 'metastasized cancer', 'normal colon'))
+print(DEresults1)
+DEresults1 <- DEresults1[order(DEresults1$pvalue),]
+
+library(gProfileR)
+library(knitr)
+
+DEresults <- results(dds3, contrast = c("group", 'metastasized cancer', 'normal colon'))
+print(DEresults)
+
+DE <- DEresults[!is.na(DEresults$padj),]
+DE <- DE[DE$padj < 0.1,]
+DE <- DE[abs(DE$log2FoldChange) > 1,]
+print(DE)
+print(DE[1:10,])
+genesOfInterest <- rownames(DE)
+DE <- DE[order(DE$pvalue),]
+
+
+goResults <- gprofiler(query = genesOfInterest,
+                       organism = 'hsapiens',
+                       src_filter = 'GO',
+                       hier_filtering = 'moderate')
+goResults <- goResults[order(goResults$p.value),]
+
+DE2 <- DEresults[!is.na(DEresults$padj),]
+DE2 <- DE2[DE2$padj < 0.01,]
+DE2 <- DE2[abs(DE2$log2FoldChange) > 2,]
+genesOfInterest2 <- rownames(DE2)
+print(genesOfInterest)
